@@ -1,18 +1,50 @@
 {
+  :paths ["src/main/clojure"]
+
+  :deps {
+    org.clojure/clojure {:mvn/version "1.12.0"}
+    org.clojure/core.async {:mvn/version "1.9.865"}
+    hato/hato {:mvn/version "1.0.0"}
+  }
+
   :aliases {
     :run {
-      :main-opts [
-        "-M -m hello-world.core"
-      ]
-      :extra-paths [
-        "src/main/clojure"
-        "target/classes"
-      ]
+      :main-opts ["-m" "hello-world.core"]
+      :extra-paths ["target/classes"]
+    }
+
+    :easyracer {
+      :main-opts ["-m" "easyracer.scenarios"]
+    }
+
+    :test {
+      :extra-paths ["src/test/clojure"]
       :extra-deps {
-        org.clojure/clojure {
-          :mvn/version "1.12.0"
-        }
+        io.github.cognitect-labs/test-runner
+          {:git/tag "v0.5.1" :git/sha "dfb30dd"}
+        clj-test-containers/clj-test-containers {:mvn/version "0.7.4"}
+        org.testcontainers/testcontainers {:mvn/version "1.20.4"}
+        org.slf4j/slf4j-simple {:mvn/version "2.0.16"}
       }
+      ;; By default exclude :slow tests (e.g. scenario 3, which races
+      ;; 10000 concurrent requests). Opt back in with the :test-slow alias.
+      :main-opts ["-m" "cognitect.test-runner"
+                  "-d" "src/test/clojure"
+                  "-e" ":slow"]
+      :exec-fn cognitect.test-runner.api/test
+      :exec-args {:dirs ["src/test/clojure"]
+                  :excludes [:slow]}
+    }
+
+    :test-slow {
+      ;; Composes with :test (so deps/paths are inherited):
+      ;;   clojure -M:test:test-slow
+      ;; Runs only the :slow-tagged tests (e.g. scenario 3).
+      :main-opts ["-m" "cognitect.test-runner"
+                  "-d" "src/test/clojure"
+                  "-i" ":slow"]
+      :exec-args {:dirs ["src/test/clojure"]
+                  :includes [:slow]}
     }
   }
 }
