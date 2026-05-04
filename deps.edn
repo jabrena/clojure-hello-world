@@ -1,0 +1,18 @@
+{
+  :aliases {
+    :run {
+      :main-opts [
+        "-M -m hello-world.core"
+      ]
+      :extra-paths [
+        "src/main/clojure"
+        "target/classes"
+      ]
+      :extra-deps {
+        org.clojure/clojure {
+          :mvn/version "1.12.0"
+        }
+      }
+    }
+  }
+}
