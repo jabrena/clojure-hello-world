@@ -1,4 +1,4 @@
-(ns easyracer.scenarios-test
+(ns info.jab.easyracer.scenarios-test
   "Integration tests for easyracer scenarios.
 
   Boots ghcr.io/jamesward/easyracer in a Testcontainer and runs every
@@ -13,21 +13,21 @@
     [clj-test-containers.core :as tc]
     [clojure.test :as t]
     [clojure.test :refer [deftest do-report is testing use-fixtures]]
-    [easyracer.scenarios :as ez]))
+    [info.jab.easyracer.scenarios :as ez]))
 
 ;; Log each scenario when it starts. `:each` fixtures run *before* `test-var`,
-;; so `clojure.test/*testing-vars*` is still empty there — hook `:begin-test-var`
+;; so `clojure.test/*testing-vars*` is still empty there - hook `:begin-test-var`
 ;; instead (fires inside `test-var`, after `*testing-vars*` is bound).
 (defmethod t/report :begin-test-var [m]
   (let [v  (:var m)
         vn (some-> v meta :ns)]
-    (when (= vn (find-ns 'easyracer.scenarios-test))
+    (when (= vn (find-ns 'info.jab.easyracer.scenarios-test))
       (let [sym (some-> v meta :name str)
             n   (second (re-matches #"scenario-(\d+)-test" sym))
             slow? (:slow (meta v))]
         (when n
-          (println (format "[easyracer] Scenario %s — %s%s"
-                             n sym (if slow? " (slow)" "")))
+          (println (format "[easyracer] Scenario %s - %s%s"
+                           n sym (if slow? " (slow)" "")))
           (flush))))))
 
 (def ^:private easyracer-image "ghcr.io/jamesward/easyracer")
