@@ -18,12 +18,11 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-          cache: maven
 
       - name: Install Clojure CLI
         uses: DeLaGuardo/setup-clojure@13
         with:
           cli: latest
 
-      - name: Run tests (EasyRacer + Testcontainers)
-        run: ./mvnw -B -ntp test
+      - name: Run tests (Clojure CLI + deps.edn)
+        run: clojure -M:test
