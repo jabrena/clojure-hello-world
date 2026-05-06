@@ -71,30 +71,5 @@ Prepared to test in OSX:
 docker compose build verify
 docker compose build --no-cache verify
 docker compose run --rm verify
+docker compose down
 ```
-
-The `verify` container runs the full test suite from the `Dockerfile` `CMD` with `clojure -M:test` (including scenario 3).
-
-## Layout
-
-```text
-├── deps.edn
-└── src/
-    ├── main/
-    │   └── clojure/
-    │       ├── hello_world/
-    │       │   └── core.clj
-    │       └── info/
-    │           └── jab/
-    │               └── easyracer/
-    │                   ├── http.clj
-    │                   └── scenarios.clj
-    └── test/
-        └── clojure/
-            └── info/
-                └── jab/
-                    └── easyracer/
-                        └── scenarios_test.clj
-```
-
-The namespaces are `hello-world.core` and `info.jab.easyracer.scenarios` (with tests in `info.jab.easyracer.scenarios-test`).

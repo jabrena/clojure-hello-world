@@ -11,22 +11,11 @@
   Override per-test via `^{:timeout-ms N}` on the `deftest`."
   (:require
     [clj-test-containers.core :as tc]
-    [clojure.test :as t]
     [clojure.test :refer [deftest do-report is testing use-fixtures]]
     [info.jab.easyracer.scenarios :as ez]))
 
-;; Log each scenario when it starts. `:each` fixtures run *before* `test-var`,
-;; so `clojure.test/*testing-vars*` is still empty there - hook `:begin-test-var`
-;; instead (fires inside `test-var`, after `*testing-vars*` is bound).
-(defmethod t/report :begin-test-var [m]
-  (let [v  (:var m)
-        vn (some-> v meta :ns)]
-    (when (= vn (find-ns 'info.jab.easyracer.scenarios-test))
-      (let [sym (some-> v meta :name str)
-            n   (second (re-matches #"scenario-(\d+)-test" sym))]
-        (when n
-          (println (format "[easyracer] Scenario %s - %s" n sym))
-          (flush))))))
+(def ^:private logger
+  (org.slf4j.LoggerFactory/getLogger "info.jab.easyracer.scenarios-test"))
 
 (def ^:private easyracer-image "ghcr.io/jamesward/easyracer")
 
@@ -59,9 +48,20 @@
     (str "http://" (:host c) ":" (get (:mapped-ports c) 8080))))
 
 (defn- stop! []
-  (when-let [c @container]
-    (tc/stop! c)
-    (reset! container nil)))
+  (when-let [c (first (swap-vals! container (constantly nil)))]
+    (tc/stop! c)))
+
+(defonce ^:private shutdown-hook
+  (let [hook (doto (Thread.
+                    ^Runnable
+                    (fn []
+                      ;; Ensure container cleanup when the JVM exits unexpectedly
+                      ;; (for example, when the run watchdog triggers System/exit).
+                      (stop!)))
+               (.setName "easyracer-container-shutdown-hook")
+               (.setDaemon true))]
+    (.addShutdownHook (Runtime/getRuntime) hook)
+    hook))
 
 (defn- with-easyracer-server [test-fn]
   (let [url (start!)]
@@ -97,15 +97,11 @@
         (reset! done? true)
         (.interrupt watchdog)))))
 
-(defn- with-timeout
-  "Per-test timeout fixture. Runs the test on a future, waits up to
-   `:timeout-ms` (from the test var's metadata, default
-   `default-test-timeout-ms`). On timeout, cancels the future and
-   reports a failure to clojure.test."
-  [test-fn]
-  (let [v       clojure.test/*testing-vars*
-        timeout (or (some-> (first v) meta :timeout-ms)
-                    default-test-timeout-ms)
+(defn- run-with-timeout
+  "Runs one scenario function on a future and fails if it exceeds
+   `timeout-ms`."
+  [timeout-ms test-fn]
+  (let [timeout timeout-ms
         fut     (future (test-fn))
         result  (deref fut timeout ::timeout)]
     (when (= ::timeout result)
@@ -117,48 +113,23 @@
          :actual   :timeout}))))
 
 (use-fixtures :once with-run-watchdog with-easyracer-server)
-(use-fixtures :each with-timeout)
 
-(deftest ^{:timeout-ms 30000} scenario-1-test
-  (testing "Race two concurrent requests"
-    (is (= :right (ez/scenario-1 *base-url*)))))
+(def ^:private scenarios
+  [{:id 1 :name "scenario-1-test" :timeout-ms 30000 :description "Race two concurrent requests" :run ez/scenario-1}
+   {:id 2 :name "scenario-2-test" :timeout-ms 30000 :description "Race two requests, one errors" :run ez/scenario-2}
+   {:id 3 :name "scenario-3-test" :timeout-ms 180000 :description "Race 10000 concurrent requests" :run ez/scenario-3}
+   {:id 4 :name "scenario-4-test" :timeout-ms 30000 :description "Race two requests, one with 1s timeout" :run ez/scenario-4}
+   {:id 5 :name "scenario-5-test" :timeout-ms 30000 :description "Race two requests; non-200 is a loser" :run ez/scenario-5}
+   {:id 6 :name "scenario-6-test" :timeout-ms 30000 :description "Race three requests; non-200 is a loser" :run ez/scenario-6}
+   {:id 7 :name "scenario-7-test" :timeout-ms 30000 :description "Hedging: second request after 3s" :run ez/scenario-7}
+   {:id 8 :name "scenario-8-test" :timeout-ms 60000 :description "Resource open/use/close" :run ez/scenario-8}
+   {:id 9 :name "scenario-9-test" :timeout-ms 30000 :description "Concatenate body in response order" :run ez/scenario-9}
+   {:id 10 :name "scenario-10-test" :timeout-ms 60000 :description "CPU work + load reporting + cancellation" :run ez/scenario-10}
+   {:id 11 :name "scenario-11-test" :timeout-ms 30000 :description "All-failures-handled nested race" :run ez/scenario-11}])
 
-(deftest ^{:timeout-ms 30000} scenario-2-test
-  (testing "Race two requests, one errors"
-    (is (= :right (ez/scenario-2 *base-url*)))))
-
-(deftest ^{:timeout-ms 180000} scenario-3-test
-  (testing "Race 10000 concurrent requests"
-    (is (= :right (ez/scenario-3 *base-url*)))))
-
-(deftest ^{:timeout-ms 30000} scenario-4-test
-  (testing "Race two requests, one with 1s timeout"
-    (is (= :right (ez/scenario-4 *base-url*)))))
-
-(deftest ^{:timeout-ms 30000} scenario-5-test
-  (testing "Race two requests; non-200 is a loser"
-    (is (= :right (ez/scenario-5 *base-url*)))))
-
-(deftest ^{:timeout-ms 30000} scenario-6-test
-  (testing "Race three requests; non-200 is a loser"
-    (is (= :right (ez/scenario-6 *base-url*)))))
-
-(deftest ^{:timeout-ms 30000} scenario-7-test
-  (testing "Hedging: second request after 3s"
-    (is (= :right (ez/scenario-7 *base-url*)))))
-
-(deftest ^{:timeout-ms 60000} scenario-8-test
-  (testing "Resource open/use/close"
-    (is (= :right (ez/scenario-8 *base-url*)))))
-
-(deftest ^{:timeout-ms 30000} scenario-9-test
-  (testing "Concatenate body in response order"
-    (is (= :right (ez/scenario-9 *base-url*)))))
-
-(deftest ^{:timeout-ms 60000} scenario-10-test
-  (testing "CPU work + load reporting + cancellation"
-    (is (= :right (ez/scenario-10 *base-url*)))))
-
-(deftest ^{:timeout-ms 30000} scenario-11-test
-  (testing "All-failures-handled nested race"
-    (is (= :right (ez/scenario-11 *base-url*)))))
+(deftest all-scenarios-test
+  (doseq [{:keys [id timeout-ms description run]} scenarios]
+    (.info logger (format "Scenario %d" id))
+    (testing description
+      (run-with-timeout timeout-ms
+                        #(is (= :right (run *base-url*)))))))
