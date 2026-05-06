@@ -23,11 +23,9 @@
         vn (some-> v meta :ns)]
     (when (= vn (find-ns 'info.jab.easyracer.scenarios-test))
       (let [sym (some-> v meta :name str)
-            n   (second (re-matches #"scenario-(\d+)-test" sym))
-            slow? (:slow (meta v))]
+            n   (second (re-matches #"scenario-(\d+)-test" sym))]
         (when n
-          (println (format "[easyracer] Scenario %s - %s%s"
-                           n sym (if slow? " (slow)" "")))
+          (println (format "[easyracer] Scenario %s - %s" n sym))
           (flush))))))
 
 (def ^:private easyracer-image "ghcr.io/jamesward/easyracer")
@@ -129,10 +127,8 @@
   (testing "Race two requests, one errors"
     (is (= :right (ez/scenario-2 *base-url*)))))
 
-(deftest ^{:timeout-ms 180000 :slow true} scenario-3-test
+(deftest ^{:timeout-ms 180000} scenario-3-test
   (testing "Race 10000 concurrent requests"
-    ;; Tagged ^:slow so it is excluded from the default test run.
-    ;; Run explicitly with: clojure -M:test:test-slow
     (is (= :right (ez/scenario-3 *base-url*)))))
 
 (deftest ^{:timeout-ms 30000} scenario-4-test

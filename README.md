@@ -39,8 +39,7 @@ The project currently verifies EasyRacer scenarios through the integration test 
 Docker must be running; the test fixture starts/stops the server automatically.
 
 ```bash
-clojure -M:test                 # all scenarios except :slow (skips scenario 3)
-clojure -M:test:test-slow       # only the :slow scenarios (scenario 3, 10k requests)
+clojure -M:test                 # all scenarios, including scenario 3
 ```
 
 #### Run tests locally
@@ -53,9 +52,6 @@ docker ps
 
 # 2) Run the default integration suite locally
 clojure -M:test
-
-# 3) (Optional) Run the slow scenario suite locally
-clojure -M:test:test-slow
 ```
 
 Test timeouts (analogue of Surefire's `forkedProcessTimeoutInSeconds` and JUnit `@Timeout`):
@@ -66,6 +62,18 @@ Test timeouts (analogue of Surefire's `forkedProcessTimeoutInSeconds` and JUnit 
   ```bash
   clojure -J-Deasyracer.run.timeout.ms=300000 -M:test
   ```
+
+## Docker
+
+Prepared to test in OSX:
+
+```bash
+docker compose build verify
+docker compose build --no-cache verify
+docker compose run --rm verify
+```
+
+The `verify` container runs the full test suite from the `Dockerfile` `CMD` with `clojure -M:test` (including scenario 3).
 
 ## Layout
 

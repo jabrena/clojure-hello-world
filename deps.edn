@@ -26,25 +26,10 @@
         org.testcontainers/testcontainers {:mvn/version "1.20.4"}
         org.slf4j/slf4j-simple {:mvn/version "2.0.16"}
       }
-      ;; By default exclude :slow tests (e.g. scenario 3, which races
-      ;; 10000 concurrent requests). Opt back in with the :test-slow alias.
       :main-opts ["-m" "cognitect.test-runner"
-                  "-d" "src/test/clojure"
-                  "-e" ":slow"]
+                  "-d" "src/test/clojure"]
       :exec-fn cognitect.test-runner.api/test
-      :exec-args {:dirs ["src/test/clojure"]
-                  :excludes [:slow]}
-    }
-
-    :test-slow {
-      ;; Composes with :test (so deps/paths are inherited):
-      ;;   clojure -M:test:test-slow
-      ;; Runs only the :slow-tagged tests (e.g. scenario 3).
-      :main-opts ["-m" "cognitect.test-runner"
-                  "-d" "src/test/clojure"
-                  "-i" ":slow"]
-      :exec-args {:dirs ["src/test/clojure"]
-                  :includes [:slow]}
+      :exec-args {:dirs ["src/test/clojure"]}
     }
   }
 }
