@@ -1,4 +1,4 @@
-# Linux image: runs Clojure integration tests with Testcontainers.
+# Linux image: runs the hello-world entrypoint.
 # Build:  docker compose build verify
 # Run:    docker compose run --rm verify
 
@@ -8,11 +8,10 @@ WORKDIR /app
 
 # Prime dependency cache first for better layer reuse.
 COPY deps.edn ./
-RUN clojure -P -M:test
+RUN clojure -P
 
 # Copy project sources after dependency resolution.
 COPY src ./src
 COPY README.md ./
 
-# Run full test suite (all scenarios).
-CMD ["clojure", "-M:test"]
+CMD ["clojure", "-M:run"]
