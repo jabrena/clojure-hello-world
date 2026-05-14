@@ -1,4 +1,4 @@
-# Linux image: runs the hello-world entrypoint.
+# Linux image: runs `info.jab.hw` via `clojure -M:run`.
 # Build:  docker compose build verify
 # Run:    docker compose run --rm verify
 
@@ -12,6 +12,5 @@ RUN clojure -P
 
 # Copy project sources after dependency resolution.
 COPY src ./src
-COPY README.md ./
 
 CMD ["clojure", "-M:run"]

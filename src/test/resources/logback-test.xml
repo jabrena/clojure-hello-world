@@ -1,0 +1,18 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Euler parametrized tests: per-problem pass + duration (see euler_problems_test.clj). -->
+    <logger name="info.jab.euler.euler-problems-test" level="INFO" />
+
+    <!-- Keep test output concise but preserve useful Testcontainers events. -->
+    <logger name="org.testcontainers" level="INFO" />
+    <logger name="com.github.dockerjava" level="WARN" />
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>

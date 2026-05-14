@@ -24,5 +24,8 @@ jobs:
         with:
           cli: latest
 
-      - name: Run application (Clojure CLI + deps.edn)
+      - name: Run tests
+        run: clojure -M:test
+
+      - name: Run application (smoke)
         run: clojure -M:run
