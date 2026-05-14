@@ -1,5 +1,11 @@
 (ns info.jab.euler.problem26)
 
+(defn- better-d-cycle [[d1 c1] [d2 c2]]
+  (cond
+    (> c1 c2) [d1 c1]
+    (< c1 c2) [d2 c2]
+    :else [(max d1 d2) c1]))
+
 (defn- cycle-length [^long d]
   (let [d' (loop [x d]
              (cond (zero? (mod x 2)) (recur (quot x 2))
@@ -13,9 +19,8 @@
           (recur (inc len) (mod (* p 10) d')))))))
 
 (defn solve []
+  ;; Independent cycle-length per d; pmap + associative max-(c, tie d).
   (first
-   (reduce (fn [[best-d best-c] ^long d]
-             (let [c (cycle-length d)]
-               (if (>= c best-c) [d c] [best-d best-c])))
+   (reduce better-d-cycle
            [0 0]
-           (range 1 1000))))
+           (pmap (fn [^long d] [d (cycle-length d)]) (range 1 1000)))))
